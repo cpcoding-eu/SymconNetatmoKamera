@@ -1,0 +1,12 @@
+{
+  "id": "{B8D5C1B8-2BA3-4C2A-9D43-41F0E6F6B2E1}",
+  "name": "Netatmo Advance Camera",
+  "author": "OpenAI / ChatGPT",
+  "url": "https://github.com/yourname/IPSymconNetatmoAdvanceCamera",
+  "compatibility": {
+    "version": "6.0"
+  },
+  "version": "0.1",
+  "build": 1,
+  "date": 20260508
+}

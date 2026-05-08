@@ -1,0 +1,31 @@
+{
+  "elements": [
+    { "type": "Label", "caption": "Netatmo Indoor Camera Advance / Security API" },
+    { "type": "ValidationTextBox", "name": "ClientID", "caption": "Client ID" },
+    { "type": "PasswordTextBox", "name": "ClientSecret", "caption": "Client Secret" },
+    { "type": "ValidationTextBox", "name": "RefreshToken", "caption": "Refresh Token" },
+    { "type": "ValidationTextBox", "name": "HomeID", "caption": "Home ID optional" },
+    { "type": "ValidationTextBox", "name": "CameraID", "caption": "Camera ID optional" },
+    { "type": "NumberSpinner", "name": "Interval", "caption": "Aktualisierungsintervall Sekunden", "minimum": 30 },
+    { "type": "CheckBox", "name": "PreferLocal", "caption": "lokale URL bevorzugen" },
+    { "type": "Select", "name": "Resolution", "caption": "Videoauflösung", "options": [
+      { "caption": "poor", "value": "poor" },
+      { "caption": "low", "value": "low" },
+      { "caption": "medium", "value": "medium" },
+      { "caption": "high", "value": "high" }
+    ]},
+    { "type": "CheckBox", "name": "CreateHtml", "caption": "HTML-Kachel erzeugen" },
+    { "type": "CheckBox", "name": "DebugRaw", "caption": "Rohdaten speichern" }
+  ],
+  "actions": [
+    { "type": "Button", "caption": "Daten aktualisieren", "onClick": "NETATMOADV_UpdateData($id);" },
+    { "type": "Button", "caption": "Access Token erneuern", "onClick": "NETATMOADV_RefreshAccessToken($id);" },
+    { "type": "Button", "caption": "Kamera automatisch erkennen", "onClick": "NETATMOADV_AutoDetect($id);" }
+  ],
+  "status": [
+    { "code": 102, "icon": "active", "caption": "Aktiv" },
+    { "code": 201, "icon": "error", "caption": "Konfiguration unvollständig" },
+    { "code": 202, "icon": "error", "caption": "Netatmo API Fehler" },
+    { "code": 203, "icon": "inactive", "caption": "Keine Kamera gefunden" }
+  ]
+}

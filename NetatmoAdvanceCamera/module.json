@@ -1,0 +1,15 @@
+{
+  "id": "{E67A4CF0-7455-4D7B-9CF0-A5E6E0994A6D}",
+  "name": "Netatmo Advance Camera",
+  "type": 3,
+  "vendor": "Netatmo",
+  "aliases": [
+    "Netatmo Indoor Camera Advance",
+    "Netatmo Advance Camera"
+  ],
+  "parentRequirements": [],
+  "childRequirements": [],
+  "implemented": [],
+  "prefix": "NETATMOADV",
+  "url": "https://github.com/yourname/IPSymconNetatmoAdvanceCamera"
+}

@@ -189,11 +189,27 @@ class NetatmoAdvanceCamera extends IPSModule
         if (!$this->ensureToken()) {
             return false;
         }
+
+        $accessToken = trim($this->ReadAttributeString('AccessToken'));
+        if ($accessToken === '') {
+            $this->LogMessage('AccessToken ist leer - API-Aufruf abgebrochen', KL_ERROR);
+            return false;
+        }
+
+        // Netatmo akzeptiert normalerweise den OAuth Bearer Header.
+        // Zur Sicherheit wird der Token zusaetzlich als Query-Parameter mitgegeben,
+        // da manche Netatmo-Endpunkte/Proxy-Kombinationen sonst "Access token is missing" liefern.
+        $params['access_token'] = $accessToken;
+
         $url = self::API_BASE . $endpoint;
         if ($params) {
             $url .= '?' . http_build_query($params);
         }
-        return $this->curl('GET', $url, ['Authorization: Bearer ' . $this->ReadAttributeString('AccessToken')]);
+
+        return $this->curl('GET', $url, [
+            'Authorization: Bearer ' . $accessToken,
+            'Accept: application/json'
+        ]);
     }
 
     private function ensureToken(): bool
@@ -216,7 +232,20 @@ class NetatmoAdvanceCamera extends IPSModule
     private function curl(string $method, string $url, array $headers = [], string $body = '', bool $json = true)
     {
         $ch = curl_init();
-        $headers[] = $json ? 'Accept: application/json' : 'Content-Type: application/x-www-form-urlencoded';
+
+        if ($json) {
+            if (!$this->hasHeader($headers, 'Accept')) {
+                $headers[] = 'Accept: application/json';
+            }
+        } else {
+            if (!$this->hasHeader($headers, 'Content-Type')) {
+                $headers[] = 'Content-Type: application/x-www-form-urlencoded';
+            }
+            if (!$this->hasHeader($headers, 'Accept')) {
+                $headers[] = 'Accept: application/json';
+            }
+        }
+
         curl_setopt_array($ch, [
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
@@ -224,42 +253,92 @@ class NetatmoAdvanceCamera extends IPSModule
             CURLOPT_TIMEOUT => 30,
             CURLOPT_HTTPHEADER => $headers,
         ]);
+
         if ($body !== '') {
             curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
         }
+
         $response = curl_exec($ch);
         $err = curl_error($ch);
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
         if ($err || $code < 200 || $code >= 300) {
-            $this->LogMessage('Netatmo API Fehler HTTP ' . $code . ' ' . $err . ' ' . (string)$response, KL_ERROR);
+            $safeUrl = preg_replace('/access_token=[^&]+/', 'access_token=***', $url);
+            $this->LogMessage('Netatmo API Fehler HTTP ' . $code . ' ' . $err . ' URL=' . $safeUrl . ' Response=' . (string)$response, KL_ERROR);
             return false;
         }
+
         $data = json_decode((string)$response, true);
+        if (!is_array($data)) {
+            $this->LogMessage('Netatmo API Antwort ist kein JSON: ' . substr((string)$response, 0, 500), KL_ERROR);
+            return false;
+        }
+
         return $data['body'] ?? $data;
+    }
+
+    private function hasHeader(array $headers, string $name): bool
+    {
+        $needle = strtolower($name) . ':';
+        foreach ($headers as $header) {
+            if (str_starts_with(strtolower(trim($header)), $needle)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private function findCamera(array $homes): array
     {
         $wantedHome = $this->ReadPropertyString('HomeID') ?: $this->ReadAttributeString('DetectedHomeID');
         $wantedCamera = $this->ReadPropertyString('CameraID') ?: $this->ReadAttributeString('DetectedCameraID');
+
+        // Bekannte Security-Kamera-Typen. NPC ist fuer die neue Indoor Camera Advance relevant.
         $types = ['NPC', 'NACamera', 'NOC', 'NDB'];
 
         foreach (($homes['homes'] ?? []) as $home) {
-            if ($wantedHome !== '' && ($home['id'] ?? '') !== $wantedHome) {
+            if ($wantedHome !== '' && (string)($home['id'] ?? '') !== $wantedHome) {
                 continue;
             }
-            foreach (($home['cameras'] ?? []) as $camera) {
-                $type = (string)($camera['type'] ?? '');
-                if ($wantedCamera !== '' && ($camera['id'] ?? '') !== $wantedCamera) {
+
+            $candidates = [];
+            foreach (['cameras', 'modules', 'devices'] as $key) {
+                foreach (($home[$key] ?? []) as $item) {
+                    if (is_array($item)) {
+                        $candidates[] = $item;
+                    }
+                }
+            }
+
+            foreach ($candidates as $camera) {
+                $id = (string)($camera['id'] ?? $camera['_id'] ?? '');
+                $type = (string)($camera['type'] ?? $camera['module_type'] ?? '');
+
+                if ($wantedCamera !== '' && $id !== $wantedCamera) {
                     continue;
                 }
+
                 if ($wantedCamera !== '' || in_array($type, $types, true)) {
+                    if (!isset($camera['id']) && $id !== '') {
+                        $camera['id'] = $id;
+                    }
+                    if (!isset($camera['type']) && $type !== '') {
+                        $camera['type'] = $type;
+                    }
                     return [$home, $camera];
                 }
             }
         }
+
+        if ($this->ReadPropertyBoolean('DebugRaw')) {
+            $this->SetValue('RawData', json_encode([
+                'error' => 'Keine passende Kamera gefunden',
+                'homesdata' => $homes,
+                'searched_types' => $types,
+            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+        }
+
         return [null, null];
     }
 

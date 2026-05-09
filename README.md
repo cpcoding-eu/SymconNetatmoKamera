@@ -1,29 +1,26 @@
-# IPSymcon Netatmo Advance Camera
+# IPSymconNetatmoAdvanceCamera
 
-Experimentelles IP-Symcon Modul fuer die Netatmo Indoor Camera Advance / Netatmo Camera Advance.
+Testmodul fuer Netatmo Indoor Camera Advance.
+
+## v0.2
+
+Aenderungen gegenueber v0.1:
+
+- Access Token wird vor API-Aufrufen erzwungen erneuert, wenn noetig.
+- API-Aufrufe senden den Token jetzt im `Authorization: Bearer ...` Header und zusaetzlich als Query-Parameter `access_token`, um den Netatmo-Fehler `Access token is missing` abzufangen.
+- Kamera-Erkennung sucht in `cameras`, `modules` und `devices`.
+- Kamera-Typ `NPC` ist enthalten.
+- Wenn keine Kamera gefunden wird und `DebugRaw` aktiv ist, wird `homesdata` in der Variable `Rohdaten` gespeichert.
 
 ## Installation
 
-Repository in Symcon ueber `Kern Instanzen -> Modules -> Hinzufuegen -> ModulURL` einbinden.
+Repository/ZIP in Symcon als Modul installieren, Instanz `Netatmo Advance Camera` anlegen und eintragen:
 
-## Netatmo App / Token
+- Client ID
+- Client Secret
+- Refresh Token
+- optional Home ID
+- optional Camera ID
 
-Du brauchst eine Netatmo Connect App und einen Refresh Token mit Security/Camera Scopes, typischerweise:
+Danach zuerst `Access Token erneuern`, dann `Daten aktualisieren` oder `Kamera automatisch erkennen` ausfuehren.
 
-- `read_camera`
-- `access_camera`
-- `write_camera` optional
-- `read_presence` / `access_presence` falls dein Account diese Scopes benoetigt
-
-## Einrichtung
-
-1. Instanz `Netatmo Advance Camera` anlegen.
-2. Client ID, Client Secret und Refresh Token eintragen.
-3. Optional Home ID und Camera ID leer lassen und `Kamera automatisch erkennen` ausfuehren.
-4. Danach `Daten aktualisieren` ausfuehren.
-
-## Hinweise
-
-- Das Modul ist bewusst klein gehalten und unabhaengig von demel42/IPSymconNetatmoSecurity.
-- Es erkennt bevorzugt den neuen Product-Type `NPC`, akzeptiert aber auch `NACamera`, `NOC` und `NDB` als Fallback.
-- URLs werden aus `vpn_url` und `local_url` gebildet.
